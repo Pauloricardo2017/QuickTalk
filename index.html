@@ -15,6 +15,12 @@
     <!-- Other imports -->
     <script src="js/sweetalert2.js"></script>
     <link rel="stylesheet" href="style/sweetalert2.css">
+
+    <!-- Audio element for alert sound -->
+    <audio id="alertSound">
+        <source src="audio/alerta.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
 </head>
 
 <body>
@@ -38,12 +44,41 @@
         </div>
     </div>
 
+    <!-- jQuery and AJAX script -->
     <script>
+        let previousData = "";
+
         function loadInbox() {
             $.ajax({
                 url: 'process/inbox.php',
                 success: function (data) {
+                    // Update inbox content
                     $('#inbox .container').html(data);
+
+                    // Check if there is a new message alert
+                    if ($('#newMessageAlert').length && data !== previousData) {
+                        // Play alert sound
+                        document.getElementById("alertSound").play();
+
+                        // Show pop-up
+                        Swal.fire({
+                            title: 'Nova mensagem',
+                            text: 'O paciente chegou!',
+                            icon: 'info',
+                            confirmButtonText: 'OK'
+                        });
+
+                        // Show system notification
+                        if (Notification.permission === "granted") {
+                            new Notification("Nova mensagem", {
+                                body: "O paciente chegou!",
+                                icon: "img/favicon.png" // Path to an icon image
+                            });
+                        }
+                    }
+
+                    // Update the previous data to the current data
+                    previousData = data;
                 },
                 error: function (error) {
                     console.log(error);
@@ -52,7 +87,7 @@
                         text: error.statusText,
                         icon: 'error',
                         confirmButtonText: 'Ok'
-                    })
+                    });
                 }
             });
         }
@@ -70,7 +105,7 @@
                         text: error.statusText,
                         icon: 'error',
                         confirmButtonText: 'Ok'
-                    })
+                    });
                 }
             });
         }
@@ -89,7 +124,7 @@
                         text: error.statusText,
                         icon: 'error',
                         confirmButtonText: 'Ok'
-                    })
+                    });
                 }
             });
         }
@@ -122,9 +157,22 @@
         }
 
         $(document).ready(function () {
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== "granted") {
+                        Swal.fire({
+                            title: 'Permissão Negada',
+                            text: 'Você não permitiu notificações, algumas funcionalidades podem não funcionar corretamente.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            }
+
             setInterval(() => {
                 loadInbox();
-            }, 3000);
+            }, 1000); // Reduce polling interval to 1 second
             loadProfile();
             chat();
         });
